@@ -1,0 +1,38 @@
+# -*- sh -*-
+# Build script for making Tweak release archives.
+
+module tweak
+
+# For historical reasons relating to the way the SVN repository for
+# Tweak used to be organised, the files btree.c and btree.h might be
+# in several locations: already in the 'tweak' module, in a 'library'
+# subdirectory of that, or in a separate 'library' source control
+# module. Be prepared to cope with any of those possibilities.
+set need_library no
+ifnexist tweak/btree.c set need_library yes
+ifnexist tweak/btree.h set need_library yes
+set library_separate no
+ifnexist tweak/library set library_separate yes
+ifeq "$(need_library) $(library_separate)" "yes no" in . do mv tweak/library library
+ifeq "$(need_library) $(library_separate)" "yes yes" checkout library library
+ifnexist tweak/btree.c in tweak do ln -s ../library/btree.c .
+ifnexist tweak/btree.h in tweak do ln -s ../library/btree.h .
+
+# Determine the version number.
+set Version $(!builddate).$(vcsid)
+ifneq $(RELEASE) "" set Version $(RELEASE)
+
+# Put versionids into the docs. (Use perl to avoid inconsistent
+# behaviour of echo '\v'.)
+in tweak do perl -e 'print "\n\\versionid tweak version $$ARGV[0]\n"' $(Version) >> manpage.but
+in tweak do perl -e 'print "\n\\versionid tweak version $$ARGV[0]\n"' $(Version) >> btree.but
+
+# Fiddle with tweak.h to include the version number. Note use of $#
+# to escape a hash sign from the build script lexer.
+in tweak do perl -i~ -pe 's/(?<=$#define VER ")(?=")/$(Version)/' tweak.h
+
+# Make the release archive.
+in tweak do make release VERSION=$(Version)
+
+# And deliver it.
+deliver tweak/tweak-$(Version).tar.gz $@
