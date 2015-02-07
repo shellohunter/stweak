@@ -41,7 +41,7 @@ endif
 .c.o:
 	$(CC) $(CFLAGS) $*.c
 
-all: tweak tweak.1 btree.html
+all: tweak
 
 tweak:	$(TWEAK)
 	$(LINK) -o tweak $(TWEAK) $(LIBS)
